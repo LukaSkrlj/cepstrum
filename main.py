@@ -4,9 +4,14 @@ import pandas as pd
 from scipy.fftpack import fft, ifft, dct
 from scipy.spatial.distance import mahalanobis
 import matplotlib.pyplot as plt
+import os
+
+file_name = input('Unesite ime datoteke: ')
 
 # Učitavanje zvučnog signala
-rate, signal = wav.read('test.wav')
+rate, signal = wav.read(os.path.abspath(os.path.join(__file__ ,"../..",'wav_sm04',file_name+ '.wav')))
+# Učitavanje oznaka iz test.lab
+df_lab = pd.read_csv(os.path.abspath(os.path.join(__file__ ,"../..", 'lab_sm04', file_name + '.lab')), sep=' ', header=None, names=['start', 'end', 'label'])
 
 # Normalizacija signala
 signal = signal / np.max(np.abs(signal))
@@ -33,8 +38,6 @@ plt.title('MFCC')
 plt.xlabel('Koeficijenti')
 plt.ylabel('Vrijednost')
 
-# Učitavanje oznaka iz test.lab
-df_lab = pd.read_csv('test.lab', sep=' ', header=None, names=['start', 'end', 'label'])
 
 # Uklanjanje početne i završne oznake (ako su prisutne)
 df_lab = df_lab.drop([0, len(df_lab) - 1])
@@ -43,7 +46,6 @@ df_lab = df_lab.drop([0, len(df_lab) - 1])
 phoneme_models = {}
 for phoneme, group in df_lab.groupby('label'):
     # Prvo izračunajmo MFCC za svaki segment
-    print(phoneme, group)
     segments = []
     for _, row in group.iterrows():
         # Konverzija iz vremenskih jedinica (0.1 mikro sekunda) u sample-ove
