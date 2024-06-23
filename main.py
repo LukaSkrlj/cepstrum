@@ -12,7 +12,7 @@ rate, signal = wav.read('test.wav')
 signal = signal / np.max(np.abs(signal))
 
 # Parametri
-frame_length = int(rate / 50)  # Dužina prozora 20 ms
+frame_length = 2000  # Dužina prozora 20 ms
 hop_length = int(frame_length / 2)  # Korak (preklapanje) prozora
 n_fft = frame_length
 n_mels = 40  # Broj Mel filtara
