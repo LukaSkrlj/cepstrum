@@ -11,7 +11,8 @@ file_name = input('Unesite ime datoteke: ')
 # Učitavanje zvučnog signala
 rate, signal = wav.read(os.path.abspath(os.path.join(__file__ ,"../..",'wav_sm04',file_name+ '.wav')))
 # Učitavanje oznaka iz test.lab
-df_lab = pd.read_csv(os.path.abspath(os.path.join(__file__ ,"../..", 'lab_sm04', file_name + '.lab')), sep=' ', header=None, names=['start', 'end', 'label'])
+df_lab = pd.read_csv(os.path.abspath(os.path.join(__file__ ,"../..", 'lab_sm04', file_name + '.lab')),
+                     sep=' ', header=None, names=['start', 'end', 'label'])
 
 # Normalizacija signala
 signal = signal / np.max(np.abs(signal))
@@ -101,10 +102,48 @@ for i in range(len(frames)):
     # Dodavanje klasificiranog fonema u rezultate
     classified_segments.append((i, frames[i], classified_phoneme, min_distance))
 
+
+def calculate_matching_percentage(dictionary):
+    result = {}
+
+    for key, value in dictionary.items():
+        result[key] = value.count(key)/len(value)
+
+    return result
+
+
+print(df_lab)
+errors = {}
 # Ispis rezultata klasifikacije
 for i, frame, phoneme, distance in classified_segments:
     print(f"Segment {i}: Fonem '{phoneme}' (Udaljenost: {distance:.2f})")
+    time = (i+1) * 10 / 10e3
+    f = df_lab[(df_lab['start']/10e7 <= time) & (df_lab['end']/10e7 >= time)]
 
+    if not f.empty:
+        p = f['label'].values[0]
+        if len(phoneme) > 1:
+            phoneme = phoneme[0]
+        if len(p) > 1:
+            p = p[0]
+        if p in errors:
+            errors[p].append(phoneme)
+        else:
+            errors[p] = []
+            errors[p].append(phoneme)
+
+print(errors)
+r = calculate_matching_percentage(errors)
+plt.figure(figsize=(10, 6))
+plt.bar(r.keys(), r.values(), color='skyblue')
+
+plt.xlabel('Fonemi')
+plt.ylabel('Postotak točnosti')
+plt.title('Postotak točno određenih fonema')
+
+print(f'Ukupna točnost: {round(np.array(list(r.values())).mean(),4) * 100}%')
+
+plt.show()
 # Prikaz prvog prozora DCT i FFT
 
 # FFT graf
