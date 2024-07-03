@@ -14,9 +14,23 @@ def calculate_matching_percentage(dictionary):
 
     return result
 
+def calculate_matching_counts(dictionary):
+    result = {}
+
+    for key, value in dictionary.items():
+        counts = {}
+        for v in value:
+            if v in counts:
+                counts[v] += 1
+            else:
+                counts[v] = 1
+        result[key] = counts
+
+    return result
+
 wav_directory = '../wav_sm04'
 lab_directory = '../lab_sm04'
-n_files = 40
+n_files = 100
 
 mfcc_all = []
 
@@ -48,8 +62,6 @@ for file_name in file_list:
             log_spectrum.append(np.log(np.abs(spectrum)))
 
         mfcc = np.array([dct(log_spectrum_frame)[:13] for log_spectrum_frame in log_spectrum])
-
-        mfcc_all.append(mfcc)
 
         phoneme_models = {}
         for phoneme, group in df_lab.groupby('label'):
@@ -108,6 +120,40 @@ for file_name in file_list:
                     errors[p] = []
                     errors[p].append(phoneme)
 
+matching_counts = calculate_matching_counts(errors)
+
+phonemes = sorted(list(matching_counts.keys()))
+matrix_data = np.zeros((len(phonemes), len(phonemes)), dtype=int)
+
+for i, true_phoneme in enumerate(phonemes):
+    if true_phoneme in matching_counts:
+        for predicted_phoneme, count in matching_counts[true_phoneme].items():
+            if predicted_phoneme in phonemes:
+                j = phonemes.index(predicted_phoneme)
+                matrix_data[i, j] = count
+
+
+
+plt.figure(figsize=(18, 14)) 
+
+plt.imshow(matrix_data, cmap='Blues', interpolation='nearest', aspect='auto')
+
+plt.title('Misclassification Matrix of Phonemes', fontsize=16)
+plt.colorbar()
+plt.xticks(np.arange(len(phonemes)), phonemes, rotation=45, ha='right', fontsize=12) 
+plt.yticks(np.arange(len(phonemes)), phonemes, fontsize=12)
+plt.xlabel('Predicted Phonemes', fontsize=14)  
+plt.ylabel('True Phonemes', fontsize=14)  
+
+
+for i in range(len(phonemes)):
+    for j in range(len(phonemes)):
+        plt.text(j, i, str(matrix_data[i, j]), ha='center', va='center', color='black', fontsize=10) 
+
+plt.tight_layout()
+plt.show()
+
+
 matching_percentage = calculate_matching_percentage(errors)
 
 plt.figure(figsize=(10, 6))
@@ -119,5 +165,6 @@ plt.ylim(0, 1)
 plt.grid(True)
 plt.show()
 
-overall_accuracy = round(np.array(list(matching_percentage.values())).mean(), 4) * 100
+
+overall_accuracy = round(sum([matrix_data[i, i] for i in range(len(phonemes))]) / np.sum(matrix_data) * 100, 2)
 print(f'Overall Accuracy: {overall_accuracy:.2f}%')
